@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿// Credit goes to TraceEntertains (https://github.com/TraceEntertains) for creating this code.
+using System.IO.Compression;
 using System.Text;
 using System.Security.Cryptography;
 

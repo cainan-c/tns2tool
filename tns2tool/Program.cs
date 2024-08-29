@@ -180,16 +180,52 @@ namespace CryptoCLI
                 }
             }
 
-            // Check if the file content is JSON (starts with '{' or '[' and ends with '}' or ']')
+            // Convert the byte array to a string for text-based file types
             string fileText = Encoding.UTF8.GetString(fileData);
+
+            // Check if the file content is JSON (starts with '{' or '[' and ends with '}' or ']')
             if (fileText.TrimStart().StartsWith("{") && fileText.TrimEnd().EndsWith("}") ||
                 fileText.TrimStart().StartsWith("[") && fileText.TrimEnd().EndsWith("]"))
             {
                 return ".json";
             }
 
+            // Refined CSV Detection: Check for a more consistent structure
+            if (IsLikelyCsv(fileText))
+            {
+                return ".csv";
+            }
+
             // Default extension if no specific format is detected
             return Path.GetExtension(".bin");
+        }
+
+        // Helper function to determine if the file content resembles a CSV file
+        static bool IsLikelyCsv(string fileText)
+        {
+            // Split the text into lines
+            string[] lines = fileText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+            // Ensure there is more than one line (CSV typically has multiple rows)
+            if (lines.Length < 2)
+            {
+                return false;
+            }
+
+            // Check the first few lines for consistent comma-separated values
+            int columnCount = lines[0].Split(',').Length;
+
+            // We expect at least some consistency in the number of columns for each row
+            for (int i = 1; i < lines.Length && i < 10; i++)  // Check up to 10 lines for consistency
+            {
+                if (lines[i].Split(',').Length != columnCount)
+                {
+                    return false;
+                }
+            }
+
+            // If the number of columns is consistent across rows, it's likely a CSV
+            return true;
         }
     }
 }
