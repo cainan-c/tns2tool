@@ -70,16 +70,20 @@ namespace CryptoCLI
 
                 if (option == "-e")
                 {
-                    byte[] encryptedData = EncryptFile(inputFile, isGzip);
-                    outputFilePath = GetOutputFileName(inputFile, outputPath, ".bin", isEncrypting: true);
+                    byte[] encryptedData;
+                    if (isGzip)
+                        encryptedData = Cryptography.EncryptAllBytesAesAndGZip(inputFile);
+                    else
+                        encryptedData = Cryptography.EncryptAllBytesAes(inputFile);
+                    outputFilePath = GetOutputFileName(inputFile, outputPath, ".bin");
                     File.WriteAllBytes(outputFilePath, encryptedData);
                     Console.WriteLine("File encrypted: " + outputFilePath);
                 }
                 else if (option == "-d")
                 {
-                    byte[] decryptedData = isGzip ? Cryptography.ReadAllAesAndGZipBytes(inputFile) : Cryptography.ReadAllAesBytes(inputFile);
+                    byte[] decryptedData = isGzip ? Cryptography.DecryptAllBytesAesAndGZip(inputFile) : Cryptography.DecryptAllBytesAes(inputFile);
                     string fileExtension = DetermineFileExtension(decryptedData);
-                    outputFilePath = GetOutputFileName(inputFile, outputPath, fileExtension, isEncrypting: false);
+                    outputFilePath = GetOutputFileName(inputFile, outputPath, fileExtension);
                     File.WriteAllBytes(outputFilePath, decryptedData);
                     Console.WriteLine("File decrypted: " + outputFilePath);
                 }
@@ -110,44 +114,8 @@ namespace CryptoCLI
             Console.WriteLine($"All files processed. Output folder: {outputFolderName}");
         }
 
-        static byte[] EncryptFile(string filePath, bool isGzip)
-        {
-            byte[] fileBuffer = File.ReadAllBytes(filePath);
-
-            if (isGzip)
-            {
-                using MemoryStream compressedStream = new();
-                using (GZipStream gzipStream = new(compressedStream, CompressionMode.Compress))
-                {
-                    gzipStream.Write(fileBuffer, 0, fileBuffer.Length);
-                }
-                fileBuffer = compressedStream.ToArray();
-            }
-
-            string name = Path.GetFileNameWithoutExtension(filePath);
-
-            using Aes aes = Aes.Create();
-            aes.BlockSize = 128;
-            aes.KeySize = 256;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-
-            Cryptography.CreateKey(aes.KeySize, out byte[] keyOut, aes.BlockSize, out byte[] ivOut, name);
-            aes.Key = keyOut;
-            aes.IV = ivOut;
-
-            using ICryptoTransform encryptor = aes.CreateEncryptor();
-            using MemoryStream encryptedStream = new();
-            using CryptoStream cryptoStream = new(encryptedStream, encryptor, CryptoStreamMode.Write);
-
-            cryptoStream.Write(fileBuffer, 0, fileBuffer.Length);
-            cryptoStream.FlushFinalBlock();
-
-            return encryptedStream.ToArray();
-        }
-
         // Function to generate the output file name based on the input file and the output path
-        static string GetOutputFileName(string inputFile, string outputPath, string newExtension, bool isEncrypting)
+        static string GetOutputFileName(string inputFile, string outputPath, string newExtension)
         {
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(inputFile);
             string directory = outputPath ?? Path.GetDirectoryName(inputFile);
@@ -197,7 +165,7 @@ namespace CryptoCLI
             }
 
             // Default extension if no specific format is detected
-            return Path.GetExtension(".bin");
+            return Path.GetExtension(".dec");
         }
 
         // Helper function to determine if the file content resembles a CSV file

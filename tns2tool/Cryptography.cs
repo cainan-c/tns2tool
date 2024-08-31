@@ -2,23 +2,28 @@
 using System.IO.Compression;
 using System.Text;
 using System.Security.Cryptography;
+using System.IO;
+using System.IO.Enumeration;
 
 namespace TNS2Crypto
 {
     public static class Cryptography
     {
-        public static readonly string KatsuName = "V1EzaGNwdEZTNFhrcHVnQ24zZldBM3FjUHpTYlk2Zm1f";
-        public static readonly string DonName = "VlIzMkpoR1YzNG5hdUdNTGJORkh2UGM1WHFBa3dqaUJf";
+        // DonName (decoded)
+        public static readonly string SeedBaseA = "VR32JhGV34nauGMLbNFHvPc5XqAkwjiB_";
 
-        // don count is used in key
-        public static readonly int DonCount = 0xffe156;
+        // KatsuName (decoded)
+        public static readonly string SeedBaseB = "WQ3hcptFS4XkpugCn3fWA3qcPzSbY6fm_";
 
-        // katsu count is used in iv
-        public static readonly int KatsuCount = 0xfeac1;
+        // DonCount (decoded)
+        public static readonly int KeyIterations = 7849;
 
-        public static byte[] ReadAllAesAndGZipBytes(string path)
+        // KatsuCount (decoded)
+        public static readonly int IVIterations = 5438;
+
+        public static byte[] DecryptAllBytesAesAndGZip(string path)
         {
-            byte[] byteBuffer = ReadAllAesBytes(path);
+            byte[] byteBuffer = DecryptAllBytesAes(path, PaddingMode.Zeros);
             using MemoryStream dataStream = new(byteBuffer);
             using MemoryStream outStream = new();
             using GZipStream gzipStream = new(dataStream, CompressionMode.Decompress);
@@ -31,113 +36,104 @@ namespace TNS2Crypto
             return byteBuffer;
         }
 
-        public static byte[] ReadAllAesBytes(string path)
+        public static byte[] DecryptAllBytesAes(string path, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             byte[] fileBuffer = File.ReadAllBytes(path);
+            string fileName = Path.GetFileNameWithoutExtension(path);
 
-            int count = fileBuffer.Length;
-            byte[] outBuffer = new byte[count];
+            return DecryptAllBytesAes(fileBuffer, fileName, paddingMode);
+        }
 
+        public static byte[] DecryptAllBytesAes(byte[] encryptedBytes, string fileName, PaddingMode paddingMode)
+        {
             using Aes aes = Aes.Create();
             aes.BlockSize = 128;
             aes.KeySize = 256;
             aes.Mode = CipherMode.CBC;
+            aes.Padding = paddingMode;
 
-            // I tried both PKCS7 | Zeros and PKCS7, PKCS7 | Zeros works but PKCS7 doesn't even though the game itself uses it lol
-            aes.Padding = PaddingMode.Zeros;
-
-            int kSize = aes.KeySize;
-            int bSize = aes.BlockSize;
-
-            string name = Path.GetFileNameWithoutExtension(path);
-
-            CreateKey(kSize, out byte[] keyOut, bSize, out byte[] ivOut, name);
+            CreateKey(aes.KeySize, out byte[] keyOut, aes.BlockSize, out byte[] ivOut, fileName);
 
             aes.IV = ivOut;
             aes.Key = keyOut;
 
             using ICryptoTransform transform = aes.CreateDecryptor();
-            using MemoryStream fileBufferStream = new(fileBuffer, 0, count);
+            using MemoryStream fileBufferStream = new(encryptedBytes, 0, encryptedBytes.Length);
             using CryptoStream decryptStream = new(fileBufferStream, transform, CryptoStreamMode.Read);
-            using BinaryReader binaryReader = new(decryptStream);
+            using MemoryStream outStream = new();
 
-            binaryReader.Read(outBuffer, 0, count);
+            decryptStream.CopyTo(outStream);
 
             transform.Dispose();
-            return outBuffer;
+            return outStream.ToArray();
         }
 
-        // this method is half broken and uses deprecated code
-        //public static byte[] ReadAllAesBytes(string path)
-        //{
-        //    byte[] fileBuffer = File.ReadAllBytes(path);
+        public static byte[] EncryptAllBytesAesAndGZip(string path)
+        {
+            using FileStream fileStream = File.OpenRead(path);
+            using GZipStream gzipStream = new(fileStream, CompressionMode.Compress);
+            using MemoryStream outStream = new();
 
-        //    int count = fileBuffer.Length;
-        //    byte[] outBuffer = new byte[count];
+            gzipStream.CopyTo(outStream);
+            gzipStream.Close();
+            fileStream.Close();
 
-        //    using AesCryptoServiceProvider cryptoProvider = new()
-        //    {
-        //        BlockSize = 128,
-        //        KeySize = 256,
-        //        Mode = CipherMode.CBC,
-        //        Padding = PaddingMode.PKCS7
-        //    };
+            string fileName = Path.GetFileNameWithoutExtension(path);
 
-        //    int kSize = cryptoProvider.KeySize;
-        //    int bSize = cryptoProvider.BlockSize;
+            // outStream.Position = 0 is not required due to the use of outStream.ToArray()
+            return EncryptAllBytesAes(outStream.ToArray(), fileName, PaddingMode.Zeros);
+        }
 
-        //    string name = Path.GetFileNameWithoutExtension(path);
+        public static byte[] EncryptAllBytesAes(string filePath, PaddingMode paddingMode = PaddingMode.PKCS7)
+        {
+            byte[] fileBuffer = File.ReadAllBytes(filePath);
+            string fileName = Path.GetFileNameWithoutExtension(filePath);
 
-        //    CreateKey(kSize, out byte[] keyOut, bSize, out byte[] ivOut, name);
+            return EncryptAllBytesAes(fileBuffer, fileName, paddingMode);
+        }
 
-        //    cryptoProvider.IV = ivOut;
-        //    cryptoProvider.Key = keyOut;
+        public static byte[] EncryptAllBytesAes(byte[] decryptedBytes, string fileName, PaddingMode paddingMode)
+        {
+            using Aes aes = Aes.Create();
+            aes.BlockSize = 128;
+            aes.KeySize = 256;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = paddingMode;
 
-        //    using ICryptoTransform transform = cryptoProvider.CreateDecryptor();
-        //    using MemoryStream fileBufferStream = new(fileBuffer, 0, count);
-        //    using CryptoStream decryptStream = new(fileBufferStream, transform, CryptoStreamMode.Read);
-        //    using BinaryReader binaryReader = new(decryptStream);
+            CreateKey(aes.KeySize, out byte[] keyOut, aes.BlockSize, out byte[] ivOut, fileName);
+            aes.Key = keyOut;
+            aes.IV = ivOut;
 
-        //    binaryReader.Read(outBuffer, 0, count);
+            using ICryptoTransform encryptor = aes.CreateEncryptor();
+            using MemoryStream encryptedStream = new();
+            using CryptoStream cryptoStream = new(encryptedStream, encryptor, CryptoStreamMode.Write);
 
-        //    transform.Dispose();
-        //    return outBuffer;
-        //}
+            cryptoStream.Write(decryptedBytes, 0, decryptedBytes.Length);
+            cryptoStream.FlushFinalBlock();
 
+            return encryptedStream.ToArray();
+        }
+
+
+        // thanks to Oman Computar for his input on the deobfuscation of the following 2 functions
         public static void CreateKey(int kSize, out byte[] keyOut, int bSize, out byte[] ivOut, string name)
         {
-            int donCount;
-            int katsuCount;
-            string donNameString;
-            byte[] donNameBuffer;
-            string katsuNameString;
-            byte[] katsuNameBuffer;
+            byte[] seedABuffer = Encoding.UTF8.GetBytes(SeedBaseA + name);
+            byte[] seedBBuffer = Encoding.UTF8.GetBytes(SeedBaseB + name);
 
-            donNameBuffer = Convert.FromBase64String(DonName);
-            donNameString = string.Concat(Encoding.UTF8.GetString(donNameBuffer), name);
-
-            katsuNameBuffer = Convert.FromBase64String(KatsuName);
-            katsuNameString = string.Concat(Encoding.UTF8.GetString(katsuNameBuffer), name);
-
-            katsuCount = KatsuCount;
-            donCount = DonCount;
-
-            donNameBuffer = Encoding.UTF8.GetBytes(donNameString);
-            katsuNameBuffer = Encoding.UTF8.GetBytes(katsuNameString);
-
-            keyOut = CurryYomogi_Match(donNameBuffer, katsuNameBuffer, donCount ^ 0xffffff, (int)((kSize >> 0x1f & 7U) + kSize) >> 3);
-            ivOut = CurryYomogi_Match(donNameBuffer, katsuNameBuffer, katsuCount ^ 0xfffff, (int)((bSize >> 0x1f & 7U) + bSize) >> 3);
+            keyOut = CurryYomogi_Match(seedABuffer, seedBBuffer, KeyIterations, (int)((kSize >> 0x1f & 7U) + kSize) >> 3);
+            ivOut = CurryYomogi_Match(seedABuffer, seedBBuffer, IVIterations, (int)((bSize >> 0x1f & 7U) + bSize) >> 3);
             return;
         }
 
-        private static byte[] CurryYomogi_Match(byte[] a, byte[] b, int c, int d)
+        private static byte[] CurryYomogi_Match(byte[] seedA, byte[] seedB, int iterations, int outSize)
         {
             byte[] array;
-            byte[] shiftArray = new byte[b.Length + 4];
+            byte[] shiftArray = new byte[seedB.Length + 4];
             byte[] finalShiftArray;
             using MemoryStream memStream = new();
 
-            using HMACSHA256 hS256 = new(a);
+            using HMACSHA256 hS256 = new(seedA);
             int iVar2 = (int)((hS256.HashSize >> 0x1f & 7U) + hS256.HashSize) >> 3;
             
             int iVar9 = iVar2 + 1;
@@ -148,32 +144,32 @@ namespace TNS2Crypto
             
             try
             {
-                if ((d <= iVar9 * 0xffffffff) && d > -1)
+                if ((outSize <= iVar9 * 0xffffffff) && outSize > -1)
                 {
-                    iVar2 = d / iVar9 + 1;
-                    if (d % iVar9 == 0)
+                    iVar2 = outSize / iVar9 + 1;
+                    if (outSize % iVar9 == 0)
                     {
-                        iVar2 = d / iVar9;
+                        iVar2 = outSize / iVar9;
                     }
 
-                    Buffer.BlockCopy(b, 0, shiftArray, 0, b.Length);
+                    Buffer.BlockCopy(seedB, 0, shiftArray, 0, seedB.Length);
 
                     int calcLoopIterator = 0;
                     while (calcLoopIterator < iVar2)
                     {
                         iVar9 = calcLoopIterator + 1;
                         
-                        if (shiftArray.Length <= b.Length) return shiftArray;
-                        shiftArray[b.Length] = (byte)((uint)iVar9 >> 24);
-                        shiftArray[b.Length + 1] = (byte)((uint)iVar9 >> 16);
-                        shiftArray[b.Length + 2] = (byte)((uint)iVar9 >> 8);
-                        shiftArray[b.Length + 3] = (byte)(calcLoopIterator + 1);
+                        if (shiftArray.Length <= seedB.Length) return shiftArray;
+                        shiftArray[seedB.Length] = (byte)((uint)iVar9 >> 24);
+                        shiftArray[seedB.Length + 1] = (byte)((uint)iVar9 >> 16);
+                        shiftArray[seedB.Length + 2] = (byte)((uint)iVar9 >> 8);
+                        shiftArray[seedB.Length + 3] = (byte)(calcLoopIterator + 1);
 
                         array = hS256.ComputeHash(shiftArray);
-                        Array.Clear(shiftArray, b.Length, 4);
+                        Array.Clear(shiftArray, seedB.Length, 4);
                         finalShiftArray = array;
 
-                        for (iVar9 = 1; iVar9 < c; iVar9++)
+                        for (iVar9 = 1; iVar9 < iterations; iVar9++)
                         {
                             finalShiftArray = hS256.ComputeHash(finalShiftArray);
                             int calcLoopIterator2 = 0;
@@ -191,9 +187,10 @@ namespace TNS2Crypto
                         Array.Clear(array, 0, array.Length);
                         calcLoopIterator++;
                     }
-                    finalShiftArray = new byte[d];
+                    finalShiftArray = new byte[outSize];
+
                     memStream.Position = 0;
-                    memStream.Read(finalShiftArray, 0, d);
+                    memStream.Read(finalShiftArray, 0, outSize);
                     memStream.Position = 0;
 
                     memStream.Close();
