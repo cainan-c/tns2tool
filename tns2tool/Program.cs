@@ -164,8 +164,8 @@ namespace CryptoCLI
                 return ".csv";
             }
 
-            // Default extension if no specific format is detected
-            return Path.GetExtension(".dec");
+            // Default extension if no specific format is detected (this generally handles fumen files)
+            return Path.GetExtension(".dec.bin");
         }
 
         // Helper function to determine if the file content resembles a CSV file
