@@ -10,16 +10,16 @@ namespace TNS2Crypto
     public static class Cryptography
     {
         // DonName (decoded)
-        public static readonly string SeedBaseA = "VR32JhGV34nauGMLbNFHvPc5XqAkwjiB_";
+        public const string SeedBaseA = "VR32JhGV34nauGMLbNFHvPc5XqAkwjiB_";
 
         // KatsuName (decoded)
-        public static readonly string SeedBaseB = "WQ3hcptFS4XkpugCn3fWA3qcPzSbY6fm_";
+        public const string SeedBaseB = "WQ3hcptFS4XkpugCn3fWA3qcPzSbY6fm_";
 
         // DonCount (decoded)
-        public static readonly int KeyIterations = 7849;
+        public const int KeyIterations = 7849;
 
         // KatsuCount (decoded)
-        public static readonly int IVIterations = 5438;
+        public const int IVIterations = 5438;
 
         public static byte[] DecryptAllBytesAesAndGZip(string path)
         {

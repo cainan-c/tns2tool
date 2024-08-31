@@ -9,11 +9,13 @@ namespace CryptoCLI
 {
     class Program
     {
+        public const string Version = "1.1";
+
         static void Main(string[] args)
         {
             if (args.Length < 3)
             {
-                Console.WriteLine("Taiko no Tatsujin: Rhythm Festival (PC/XBOX/PS5) File Decryption and Encryption Tool");
+                Console.WriteLine($"Taiko no Tatsujin: Rhythm Festival (PC/XBOX/PS5) File Decryption and Encryption Tool (v{Version})");
                 Console.WriteLine("Special Thanks to TraceEntertains for the decryption/encryption logic used here");
                 Console.WriteLine("");
                 Console.WriteLine("Usage:");
