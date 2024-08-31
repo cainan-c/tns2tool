@@ -9,7 +9,7 @@ namespace CryptoCLI
 {
     class Program
     {
-        public const string Version = "1.1";
+        public const string Version = "0.2";
 
         static void Main(string[] args)
         {
