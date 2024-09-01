@@ -12,6 +12,7 @@ namespace TNS2Tool
     {
         public static byte VersionMajor;
         public static byte VersionMinor;
+        public static byte VersionRevision;
         public static string InformationalVersion;
 
         public static string GetFileVersion()
@@ -21,11 +22,13 @@ namespace TNS2Tool
 
         static void PopulateVersionInfo()
         {
-            Assembly assembly = Assembly.GetEntryAssembly()!;
-            Version version = assembly.GetName().Version!;
+            Version version = Assembly.GetEntryAssembly()!.GetName().Version!;
             VersionMajor = (byte)version.Major;
             VersionMinor = (byte)version.Minor;
-            InformationalVersion = FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion!;
+            VersionRevision = (byte)version.Revision;
+
+            InformationalVersion =
+                FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!;
         }
 
         static void Main(string[] args)
