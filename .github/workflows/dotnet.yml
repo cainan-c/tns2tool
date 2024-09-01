@@ -24,3 +24,8 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Upload build results
+      uses: actions/upload-artifact@v4
+      with:
+        name: tns2tool_build
+        path: bin
