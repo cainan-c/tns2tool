@@ -27,5 +27,5 @@ jobs:
     - name: Upload build results
       uses: actions/upload-artifact@v4
       with:
-        name: tns2tool_build
-        path: bin
+        name: tns2tool_build_artifact
+        path: ./tns2tool/bin
