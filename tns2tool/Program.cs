@@ -27,8 +27,20 @@ namespace TNS2Tool
             VersionMinor = (byte)version.Minor;
             VersionRevision = (byte)version.Revision;
 
-            InformationalVersion =
-                FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!;
+            try
+            {
+                InformationalVersion =
+                    FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!;
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                Console.WriteLine("Error getting InformationalVersion: " + ex.Message);
+#endif
+
+                // fallback informational version, hopefully we never need this
+                InformationalVersion = $"{VersionMajor}.{VersionMinor}.{VersionRevision}";
+            }
         }
 
         static void Main(string[] args)
