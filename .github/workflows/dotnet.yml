@@ -5,27 +5,64 @@ name: .NET
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
-  build:
+    Build:
+        runs-on: ${{ matrix.OS_BUILD_PLATFORM }}
 
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 6.0.x
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore
-    - name: Upload build results
-      uses: actions/upload-artifact@v4
-      with:
-        name: tns2tool_build_artifact
-        path: ./tns2tool/bin
+        strategy:
+            matrix:
+                os: [ubuntu-latest, macOS-latest, windows-latest]
+                configuration: [Debug, Release]
+                include:
+                  - os: ubuntu-latest
+                    OS_NAME: Linux x64
+                    DOTNET_RUNTIME_IDENTIFIER: linux-x64
+                    RELEASE_ZIP_OS_NAME: linux_x64
+                    OS_BUILD_PLATFORM: ubuntu-latest
+                    
+                  - os: macOS-latest
+                    OS_NAME: macOS x64
+                    DOTNET_RUNTIME_IDENTIFIER: osx-x64
+                    RELEASE_ZIP_OS_NAME: osx_x64
+                    OS_BUILD_PLATFORM: ubuntu-latest
+                    
+                  - os: windows-latest
+                    OS_NAME: Windows x64
+                    DOTNET_RUNTIME_IDENTIFIER: win-x64
+                    RELEASE_ZIP_OS_NAME: win_x64
+                    OS_BUILD_PLATFORM: windows-latest
+                    
+                  - configuration: Debug
+                    BUILD_CONFIGURATION_NAME: debug
+                    
+                  - configuration: Release
+                    BUILD_CONFIGURATION_NAME: release
+        
+        steps:
+          - uses: actions/checkout@v4
+            
+          - name: Setup .NET
+            uses: actions/setup-dotnet@v4
+            with:
+                dotnet-version: 6.0.x
+            
+          - name: Restore dependencies
+            run: dotnet restore
+            
+          - name: Build
+            run: dotnet build --no-restore
+            
+          - name: Publish
+            run: dotnet publish -c "${{ matrix.configuration }}" -r ${{ matrix.DOTNET_RUNTIME_IDENTIFIER }} --output ./publish --no-restore
+            
+          - name: Upload build results
+            uses: actions/upload-artifact@v4
+            with:
+                name: tns2tool_${{ matrix.RELEASE_ZIP_OS_NAME }}-${{ matrix.BUILD_CONFIGURATION_NAME }}
+                path: publish
