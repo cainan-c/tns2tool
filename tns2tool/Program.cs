@@ -10,10 +10,10 @@ namespace TNS2Tool
 {
     public class Program
     {
-        public static byte VersionMajor;
-        public static byte VersionMinor;
-        public static byte VersionRevision;
-        public static string InformationalVersion;
+        public static byte VersionMajor { get; private set; } = 0;
+        public static byte VersionMinor { get; private set; } = 0;
+        public static byte VersionRevision { get; private set; } = 0;
+        public static string InformationalVersion { get; private set; } = "";
 
         public static string GetFileVersion()
         {
@@ -32,12 +32,15 @@ namespace TNS2Tool
                 InformationalVersion =
                     FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!;
             }
+#if DEBUG
             catch (Exception ex)
             {
-#if DEBUG
-                Console.WriteLine("Error getting InformationalVersion: " + ex.Message);
-#endif
 
+                Console.WriteLine("Error getting InformationalVersion: " + ex.Message);
+#else
+            catch
+            {
+#endif
                 // fallback informational version, hopefully we never need this
                 InformationalVersion = $"{VersionMajor}.{VersionMinor}.{VersionRevision}";
             }
