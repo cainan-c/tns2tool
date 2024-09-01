@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.IO;
 using System.IO.Enumeration;
 
-namespace TNS2Crypto
+namespace TNS2Tool
 {
     public static class Cryptography
     {

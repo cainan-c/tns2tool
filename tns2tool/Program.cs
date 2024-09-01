@@ -1,21 +1,41 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
-using TNS2Crypto;
 
-namespace CryptoCLI
+namespace TNS2Tool
 {
-    class Program
+    public class Program
     {
-        public const string Version = "0.2";
+        public static byte VersionMajor;
+        public static byte VersionMinor;
+        public static string InformationalVersion;
+
+        public static string GetFileVersion()
+        {
+            return $"{VersionMajor}.{VersionMinor}";
+        }
+
+        static void PopulateVersionInfo()
+        {
+            Assembly assembly = Assembly.GetEntryAssembly()!;
+            Version version = assembly.GetName().Version!;
+            VersionMajor = (byte)version.Major;
+            VersionMinor = (byte)version.Minor;
+            InformationalVersion = FileVersionInfo.GetVersionInfo(assembly.Location).ProductVersion!;
+        }
 
         static void Main(string[] args)
         {
+            // this is to work around restrictions in assemblyinfo
+            PopulateVersionInfo();
+
             if (args.Length < 3)
             {
-                Console.WriteLine($"Taiko no Tatsujin: Rhythm Festival (PC/XBOX/PS5) File Decryption and Encryption Tool (v{Version})");
+                Console.WriteLine($"Taiko no Tatsujin: Rhythm Festival (PC/XBOX/PS5) File Decryption and Encryption Tool (v{InformationalVersion})");
                 Console.WriteLine("Special Thanks to TraceEntertains for the decryption/encryption logic used here");
                 Console.WriteLine("");
                 Console.WriteLine("Usage:");

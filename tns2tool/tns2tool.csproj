@@ -1,10 +1,22 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PublishSingleFile>true</PublishSingleFile>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Version>0.2</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Configurations>Debug;Release;FullRelease</Configurations>
+    <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
+
+  <Target Name="AddShortSourceRevisionToInformationalVersion" BeforeTargets="GetAssemblyAttributes" DependsOnTargets="GetAssemblyVersion;InitializeSourceControlInformation"
+          Condition="'$(Configuration)' != 'FullRelease'">
+    <PropertyGroup>
+      <InformationalVersion>$(InformationalVersion)-$(SourceRevisionId.Substring(0,7))</InformationalVersion>
+    </PropertyGroup>
+  </Target>
 
 </Project>
