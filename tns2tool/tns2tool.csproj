@@ -13,8 +13,20 @@
     <RuntimeIdentifiers>win-x64;osx-x64;linux-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
-  <Target Name="AddShortSourceRevisionToInformationalVersion" BeforeTargets="GetAssemblyAttributes" DependsOnTargets="GetAssemblyVersion;InitializeSourceControlInformation"
-          Condition="'$(Configuration)' != 'FullRelease'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='FullRelease|AnyCPU'">
+    <Optimize>True</Optimize>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <Target Name="AddShortSourceRevisionToInformationalVersion" BeforeTargets="GetAssemblyAttributes" DependsOnTargets="GetAssemblyVersion;InitializeSourceControlInformation" Condition="'$(Configuration)' != 'FullRelease'">
     <PropertyGroup>
       <InformationalVersion>$(InformationalVersion)-$(SourceRevisionId.Substring(0,7))</InformationalVersion>
     </PropertyGroup>
