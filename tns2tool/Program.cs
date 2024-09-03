@@ -12,38 +12,26 @@ namespace TNS2Tool
     {
         public static byte VersionMajor { get; private set; } = 0;
         public static byte VersionMinor { get; private set; } = 0;
+        public static byte VersionBuild { get; private set; } = 0;
         public static byte VersionRevision { get; private set; } = 0;
         public static string InformationalVersion { get; private set; } = "";
 
         public static string GetFileVersion()
         {
-            return $"{VersionMajor}.{VersionMinor}";
+            return $"{VersionMajor}.{VersionMinor}.{VersionBuild}.{VersionRevision}";
         }
 
         static void PopulateVersionInfo()
         {
-            Version version = Assembly.GetEntryAssembly()!.GetName().Version!;
+            Assembly entryAssembly = Assembly.GetEntryAssembly()!;
+            Version version = entryAssembly.GetName().Version!;
+
             VersionMajor = (byte)version.Major;
             VersionMinor = (byte)version.Minor;
+            VersionBuild = (byte)version.Build;
             VersionRevision = (byte)version.Revision;
 
-            try
-            {
-                InformationalVersion =
-                    FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!;
-            }
-#if DEBUG
-            catch (Exception ex)
-            {
-
-                Console.WriteLine("Error getting InformationalVersion: " + ex.Message);
-#else
-            catch
-            {
-#endif
-                // fallback informational version, hopefully we never need this
-                InformationalVersion = $"{VersionMajor}.{VersionMinor}.{VersionRevision}";
-            }
+            InformationalVersion = entryAssembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()!.InformationalVersion;
         }
 
         static void Main(string[] args)
@@ -78,7 +66,7 @@ namespace TNS2Tool
                         return;
                     }
 
-                    ProcessFile(option, inputFile, isGzip, outputPath: null);
+                    ProcessFile(option, inputFile, isGzip, null);
                 }
                 else if (args[1] == "-inPath")
                 {
@@ -102,7 +90,7 @@ namespace TNS2Tool
             }
         }
 
-        static void ProcessFile(string option, string inputFile, bool isGzip, string outputPath)
+        static void ProcessFile(string option, string inputFile, bool isGzip, string? outputPath)
         {
             try
             {
@@ -155,12 +143,12 @@ namespace TNS2Tool
         }
 
         // Function to generate the output file name based on the input file and the output path
-        static string GetOutputFileName(string inputFile, string outputPath, string newExtension)
+        static string GetOutputFileName(string inputFile, string? outputPath, string newExtension)
         {
             string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(inputFile);
-            string directory = outputPath ?? Path.GetDirectoryName(inputFile);
+            string? directory = outputPath ?? Path.GetDirectoryName(inputFile);
 
-            return Path.Combine(directory, $"{fileNameWithoutExtension}{newExtension}");
+            return Path.Combine(directory!, $"{fileNameWithoutExtension}{newExtension}");
         }
 
         // Function to determine the output file extension based on the content
