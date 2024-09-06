@@ -23,7 +23,7 @@ namespace TNS2Tool
 
         public static byte[] DecryptAllBytesAesAndGZip(string path)
         {
-            byte[] byteBuffer = DecryptAllBytesAes(path, PaddingMode.Zeros);
+            byte[] byteBuffer = DecryptAllBytesAes(path);
             using MemoryStream dataStream = new(byteBuffer);
             using MemoryStream outStream = new();
             using GZipStream gzipStream = new(dataStream, CompressionMode.Decompress);
@@ -36,21 +36,21 @@ namespace TNS2Tool
             return byteBuffer;
         }
 
-        public static byte[] DecryptAllBytesAes(string path, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public static byte[] DecryptAllBytesAes(string path)
         {
             byte[] fileBuffer = File.ReadAllBytes(path);
             string fileName = Path.GetFileNameWithoutExtension(path);
 
-            return DecryptAllBytesAes(fileBuffer, fileName, paddingMode);
+            return DecryptAllBytesAes(fileBuffer, fileName);
         }
 
-        public static byte[] DecryptAllBytesAes(byte[] encryptedBytes, string fileName, PaddingMode paddingMode)
+        public static byte[] DecryptAllBytesAes(byte[] encryptedBytes, string fileName)
         {
             using Aes aes = Aes.Create();
             aes.BlockSize = 128;
             aes.KeySize = 256;
             aes.Mode = CipherMode.CBC;
-            aes.Padding = paddingMode;
+            aes.Padding = PaddingMode.PKCS7;
 
             CreateKey(aes.KeySize, out byte[] keyOut, aes.BlockSize, out byte[] ivOut, fileName);
 
@@ -70,35 +70,35 @@ namespace TNS2Tool
 
         public static byte[] EncryptAllBytesAesAndGZip(string path)
         {
-            using FileStream fileStream = File.OpenRead(path);
-            using GZipStream gzipStream = new(fileStream, CompressionMode.Compress);
             using MemoryStream outStream = new();
+            using GZipStream gzipStream = new(outStream, CompressionLevel.Optimal);
+            using FileStream fileStream = File.OpenRead(path);
 
-            gzipStream.CopyTo(outStream);
+            fileStream.CopyTo(gzipStream);
             gzipStream.Close();
             fileStream.Close();
 
             string fileName = Path.GetFileNameWithoutExtension(path);
 
             // outStream.Position = 0 is not required due to the use of outStream.ToArray()
-            return EncryptAllBytesAes(outStream.ToArray(), fileName, PaddingMode.Zeros);
+            return EncryptAllBytesAes(outStream.ToArray(), fileName);
         }
 
-        public static byte[] EncryptAllBytesAes(string filePath, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public static byte[] EncryptAllBytesAes(string filePath)
         {
             byte[] fileBuffer = File.ReadAllBytes(filePath);
             string fileName = Path.GetFileNameWithoutExtension(filePath);
 
-            return EncryptAllBytesAes(fileBuffer, fileName, paddingMode);
+            return EncryptAllBytesAes(fileBuffer, fileName);
         }
 
-        public static byte[] EncryptAllBytesAes(byte[] decryptedBytes, string fileName, PaddingMode paddingMode)
+        public static byte[] EncryptAllBytesAes(byte[] decryptedBytes, string fileName)
         {
             using Aes aes = Aes.Create();
             aes.BlockSize = 128;
             aes.KeySize = 256;
             aes.Mode = CipherMode.CBC;
-            aes.Padding = paddingMode;
+            aes.Padding = PaddingMode.PKCS7;
 
             CreateKey(aes.KeySize, out byte[] keyOut, aes.BlockSize, out byte[] ivOut, fileName);
             aes.Key = keyOut;
